@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>578</width>
+    <height>606</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout_3">
+    <item row="0" column="2">
+     <layout class="QGridLayout" name="gridLayout">
+      <item row="2" column="1">
+       <widget class="QCustomPlot" name="customPlot3" native="true"/>
+      </item>
+      <item row="1" column="1">
+       <widget class="QCustomPlot" name="customPlot2" native="true"/>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="label_4">
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>SP - IND</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QCustomPlot" name="customPlot4" native="true">
+        <property name="minimumSize">
+         <size>
+          <width>300</width>
+          <height>0</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>Desloc</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="label_1">
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>DOLAR</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QCustomPlot" name="customPlot1" native="true"/>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="maximumSize">
+         <size>
+          <width>50</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="text">
+         <string>DX - MEX</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>578</width>
+     <height>21</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionSave_dataGraphics"/>
+    <addaction name="actionClean_Graphics"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionSettings"/>
+    <addaction name="separator"/>
+    <addaction name="actionTryd_Connect"/>
+    <addaction name="actionMT5_Connect"/>
+    <addaction name="separator"/>
+    <addaction name="actionConfig_Iniciais"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionShow_TT"/>
+    <addaction name="actionShow_TToriginal"/>
+    <addaction name="actionShow_Msg"/>
+    <addaction name="actionShow_Msg_Int"/>
+    <addaction name="actionShow_Cota_o"/>
+   </widget>
+   <widget class="QMenu" name="menuInit">
+    <property name="title">
+     <string>Init</string>
+    </property>
+    <addaction name="actionDolar_Analiser"/>
+    <addaction name="separator"/>
+    <addaction name="separator"/>
+    <addaction name="separator"/>
+    <addaction name="actionPython_Service"/>
+    <addaction name="separator"/>
+    <addaction name="actionAutomatizador"/>
+    <addaction name="actionAbrir_Boleta"/>
+    <addaction name="separator"/>
+    <addaction name="actionEstrategy"/>
+    <addaction name="separator"/>
+    <addaction name="actionPlay"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuView"/>
+   <addaction name="menuInit"/>
+  </widget>
+  <widget class="QStatusBar" name="statusbar"/>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>Settings</string>
+   </property>
+  </action>
+  <action name="actionTryd_Connect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Tryd Connect</string>
+   </property>
+  </action>
+  <action name="actionMT5_Connect">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>MT5 Connect</string>
+   </property>
+  </action>
+  <action name="actionShow_TT">
+   <property name="text">
+    <string>Show TT</string>
+   </property>
+  </action>
+  <action name="actionShow_Msg">
+   <property name="text">
+    <string>Show Msg</string>
+   </property>
+  </action>
+  <action name="actionShow_Msg_Int">
+   <property name="text">
+    <string>Show Msg Int</string>
+   </property>
+  </action>
+  <action name="actionDolar_Analiser">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Dolar Analiser</string>
+   </property>
+  </action>
+  <action name="actionTimer1s">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Timer1s</string>
+   </property>
+  </action>
+  <action name="actionAnalisador_de_Leil_o">
+   <property name="text">
+    <string>Analisador de Leilão</string>
+   </property>
+  </action>
+  <action name="actionShow_Cota_o">
+   <property name="text">
+    <string>Show Cotação</string>
+   </property>
+  </action>
+  <action name="actionPython_Service">
+   <property name="text">
+    <string>Python Service</string>
+   </property>
+  </action>
+  <action name="actionShow_TToriginal">
+   <property name="text">
+    <string>Show TToriginal</string>
+   </property>
+  </action>
+  <action name="actionAutomatizador">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Automatizador</string>
+   </property>
+  </action>
+  <action name="actionAbrir_Boleta">
+   <property name="text">
+    <string>Abrir Boleta</string>
+   </property>
+  </action>
+  <action name="actionEstrategy">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Estrategy</string>
+   </property>
+  </action>
+  <action name="actionPlay">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Play</string>
+   </property>
+  </action>
+  <action name="actionClean_Graphics">
+   <property name="text">
+    <string>Clean Graphics</string>
+   </property>
+  </action>
+  <action name="actionSave_dataGraphics">
+   <property name="text">
+    <string>Save dataGraphics</string>
+   </property>
+  </action>
+  <action name="actionConfig_Iniciais">
+   <property name="text">
+    <string>Config. Iniciais</string>
+   </property>
+  </action>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header location="global">qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
