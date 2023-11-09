@@ -45,9 +45,12 @@ QVector<bool> trydDataProcess::processaDados(QString* msg)
         SeparadorDadosResult* res1 = separador_dados_TT(&negs_copia);
         if (res1 == nullptr) break;
         sizeTTChange[res1->ativo] = res1->sizeChange;
-        SeparadorDadosResult* res2 = monta_ordem_original(res1);
-        if (res2 == nullptr) break;
-        sizeTToChange[res2->ativo] = res2->sizeChange;
+        Ativos checkIs = static_cast<Ativos>(res1->ativo);
+        if (listaDeAtivosTTo.contains(checkIs)){
+            SeparadorDadosResult* res2 = monta_ordem_original(res1);
+            if (res2 == nullptr) break;
+            sizeTToChange[res2->ativo] = res2->sizeChange;
+        }
         posicoesModificadas[res1->ativo] = true;
         pos_s = msg->indexOf("NEGS", pos_s  + 1);
     }

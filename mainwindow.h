@@ -373,11 +373,13 @@ private slots:
     ///
     void on_actionPlay_triggered();
     void realtimeDataPlotSlot();
-    void on_actionClean_Graphics_triggered();
-    void on_actionSave_dataGraphics_triggered();
-    void saveCot();
+    void on_actionClean_Graphics_triggered(){reg = -1;}
+    void saveForSec();
     void calcule_variacao();
     void calcule_diferenca();
+    void on_actionSave_data_triggered();
+
+    void on_actionSimulation_Mode_checkableChanged(bool checkable){simulationMode = checkable;}
 
 private:
     void closeEvent(QCloseEvent *event)
@@ -423,14 +425,16 @@ private:
     Estrategy* estrategyThread = nullptr;
     //////////////////////////////////////////////////
     /// \brief dataTimerPlot
-    ///
+    QTimer dataTimerSave;
     QTimer dataTimerPlot;
-    int tempoDoTimer;
+    int tempoDoTimerPlot;
+    int tempoDoTimerSave;
     float amosPorMin;
     float pointsOnGraphic;
     int reg = 0;
     int lenMedVar;
     float mediaCurta;
+    bool simulationMode = false;
     //////////////////////////////////////////////////
     /// \brief Variaveis globais da classe
     /// variaveis de importancia
@@ -441,14 +445,13 @@ private:
     };
     QVector<dadosDeImporPorAtivo> dataAtivo;
 
+    QVector<Ativos> listaDeAtivosDiff;
+    QVector<float> corPusVol;
+
     struct dadosDeDiferenca{
         QString ativos;
         QVector<float> dif1m;
-        QVector<float> dif2m;
-        QVector<float> dif5m;
-        QVector<float> dif15m;
-        QVector<float> dif30m;
-        QVector<float> difD;
+        QVector<float> dif10m;
     };
     QVector<dadosDeDiferenca> dataDif;
 
@@ -457,10 +460,11 @@ private:
         QVector<float> deslWDO;
         QVector<float> deslDOL_varR1m;
         QVector<float> deslWDO_varR1m;
-        QVector<float> deslDOL_varR5m;
-        QVector<float> deslWDO_varR5m;
+        QVector<float> deslDOL_varR10m;
+        QVector<float> deslWDO_varR10m;
     };
     dadosDeFluxo dataDolarFluxo;
+    QVector<QVector<trydDataProcess::dataBOOKF>> dadosDoBook[4];
 
     struct dadosDePreco{
         QVector<float> precosImp;

@@ -68,13 +68,33 @@ MainWindow::MainWindow(QWidget *parent)
     /// inicialização de variaveis
     /// 7 variaveis monitoradas: Dol; Ind; MXN; DX; Sp; DeslDOL; DeslWDO;
     /// 4 diferenças: Dolar x MXN; Dol x SP; Dol x DX; Dol x Ind
+    listaDeAtivosDiff.append(MEX);
+    listaDeAtivosDiff.append(DXY);
+    listaDeAtivosDiff.append(ZAR);
+    listaDeAtivosDiff.append(SP500);
+    listaDeAtivosDiff.append(GOLD);
+    listaDeAtivosDiff.append(BOND);
+    listaDeAtivosDiff.append(WIN);
+
+    tdp.listaDeAtivosTTo.append(WDO);
+
+    corPusVol.resize(tdp.tamAtivo);
+    corPusVol[MEX] = 1.0;
+    corPusVol[DXY] = 1.0;
+    corPusVol[ZAR] = 1.0;
+    corPusVol[SP500] = -1.0;
+    corPusVol[GOLD] = -1.0;
+    corPusVol[BOND] = -1.0;
+    corPusVol[WIN] = -1.0;
+
     dataAtivo.resize(tdp.tamAtivo);
-    dataDif.resize(tdp.tamAtivo);
-    tempoDoTimer = 1000; //defino o tempo do timer do plot em ms
+    dataDif.resize(7);
+    tempoDoTimerPlot = 1000; //defino o tempo do timer do plot em ms
+    tempoDoTimerSave = 10 * 60 * 1000; //defino o tempo do timer do Save em ms
     pointsOnGraphic = 600; //defino o numero de pontos a serem plotados no grafico
     lenMedVar = 60; //numero de amostras para calcular a media curta
     mediaCurta = 60*10; //numero de pontos na media curta
-    amosPorMin = 60*1000/tempoDoTimer;
+    amosPorMin = 60*1000/tempoDoTimerPlot;
     //////////////////////////////////////////////////
 }
 void MainWindow::loadSettings()
@@ -269,11 +289,11 @@ void MainWindow::onSocketTrydEvent()
         if (ativo != nulo) janelaCOT->textEditMSG->append(tdp.getPrintCOT(ativo));
     }
 
-    if (janelaTT != nullptr && sizeChange[WDO] == true)
+    if (janelaTT != nullptr && sizeChange[WIN] == true)
     {
-        msg_print = tdp.getPrintTT(tdp.sizeTTChange[WDO], WDO);
+        msg_print = tdp.getPrintTT(tdp.sizeTTChange[WIN], WIN);
         janelaTT->textEditTT->append(msg_print);
-        msg_print = tdp.getPrintBF(8, WDO);
+        msg_print = tdp.getPrintBF(8, WIN);
         janelaTT->textEditBF->append(msg_print);
     }
     if (janelaTTo != nullptr && sizeChange[WDO] == true && tdp.sizeTToFChange[WDO] > 0)
@@ -298,6 +318,11 @@ void MainWindow::trydConnected()
     msg_send.append(tdp.solicitaDados(miniDOLAR, NEGOCIOS));
     msg_send.append(tdp.solicitaDados(DOLAR, BOOKF, BOOKDEPH));
     msg_send.append(tdp.solicitaDados(miniDOLAR, BOOKF, BOOKDEPH));
+
+    msg_send.append(tdp.solicitaDados(INDICE, NEGOCIOS));
+    msg_send.append(tdp.solicitaDados(miniINDICE, NEGOCIOS));
+    msg_send.append(tdp.solicitaDados(INDICE, BOOKF, BOOKDEPH));
+    msg_send.append(tdp.solicitaDados(miniINDICE, BOOKF, BOOKDEPH));
 
     msg_send.append(tdp.solicitaDados(DOLAR, COTACAO));
     msg_send.append(tdp.solicitaDados(INDICE, COTACAO));
@@ -806,6 +831,10 @@ void MainWindow::on_actionPlay_triggered()
     ui->customPlot4->graph(0)->setPen(customPen1);
     ui->customPlot4->addGraph(ui->customPlot4->xAxis, ui->customPlot4->yAxis2); //NASDAQ
     ui->customPlot4->graph(1)->setPen(customPen2);
+    ui->customPlot5->addGraph(); //SP500
+    ui->customPlot5->graph(0)->setPen(customPen1);
+    ui->customPlot5->addGraph(ui->customPlot5->xAxis, ui->customPlot5->yAxis2); //NASDAQ
+    ui->customPlot5->graph(1)->setPen(customPen2);
 
     //////////////////////////////////////////////////
     QSharedPointer<QCPAxisTickerTime> timeTicker(new QCPAxisTickerTime);
@@ -827,6 +856,10 @@ void MainWindow::on_actionPlay_triggered()
     ui->customPlot4->yAxis->setRange(-0.1, 0.1);
     ui->customPlot4->yAxis2->setRange(-0.1, 0.1);
     ui->customPlot4->yAxis2->setVisible(true);
+    ui->customPlot5->xAxis->setTicker(timeTicker);
+    ui->customPlot5->yAxis->setRange(-0.1, 0.1);
+    ui->customPlot5->yAxis2->setRange(-0.1, 0.1);
+    ui->customPlot5->yAxis2->setVisible(true);
     //////////////////////////////////////////////////
 
     // make left and bottom axes transfer their ranges to right and top axes:
@@ -838,10 +871,13 @@ void MainWindow::on_actionPlay_triggered()
     connect(ui->customPlot3->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot3->yAxis2, SLOT(setRange(QCPRange)));
     connect(ui->customPlot4->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot4->xAxis2, SLOT(setRange(QCPRange)));
     connect(ui->customPlot4->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot4->yAxis2, SLOT(setRange(QCPRange)));
-
+    connect(ui->customPlot5->xAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot5->xAxis2, SLOT(setRange(QCPRange)));
+    connect(ui->customPlot5->yAxis, SIGNAL(rangeChanged(QCPRange)), ui->customPlot5->yAxis2, SLOT(setRange(QCPRange)));
     // setup a timer that repeatedly calls MainWindow::realtimeDataSlot:
     connect(&dataTimerPlot, SIGNAL(timeout()), this, SLOT(realtimeDataPlotSlot()));
-    dataTimerPlot.start(tempoDoTimer); // Interval 0 means to refresh as fast as possible
+    connect(&dataTimerSave, SIGNAL(timeout()), this, SLOT(on_actionSave_data_triggered()));
+    dataTimerPlot.start(tempoDoTimerPlot); // Interval 0 means to refresh as fast as possible
+    dataTimerSave.start(tempoDoTimerSave); // Interval 0 means to refresh as fast as possible
 }
 void MainWindow::realtimeDataPlotSlot()
 {
@@ -859,11 +895,21 @@ void MainWindow::realtimeDataPlotSlot()
     static QVector<float> lastPoints3a;
     static QVector<float> lastPoints4;
     static QVector<float> lastPoints4a;
+    static QVector<float> lastPoints5;
+    static QVector<float> lastPoints5a;
     //////////////////////////////////////////////////
     /// \brief chamo as funções para calcular outras coisas dentro do timer
     ///
 
-    saveCot();
+    QTime horaAtual = QTime::currentTime();
+    if (simulationMode == false){
+        QTime horaDesejadaStart(9, 0, 0);  // 9:00:00
+        if (horaAtual < horaDesejadaStart) return ui->statusbar->showMessage("hora atual < 9:00", 5000);
+        QTime horaDesejadaStop(18, 0, 0);  // 18:00:00
+        if (horaAtual > horaDesejadaStop) return ui->statusbar->showMessage("hora atual > 18:00", 5000);
+    }
+
+    saveForSec();
     calcule_variacao();
     calcule_diferenca();
 
@@ -875,6 +921,8 @@ void MainWindow::realtimeDataPlotSlot()
     double newValue1a = dataAtivo[WDO].cotA.last();
     double newValue2 = diferenca;
     double newValue2a = diferencaW;
+    double newValue5 = dataDif[3].dif1m.last();
+    double newValue5a = dataDif[3].dif10m.last();
     double newValue3 = dataAtivo[DXY].perA.last();
     double newValue3a = dataAtivo[MEX].perA.last();
     double newValue4 = dataAtivo[SP500].perA.last();
@@ -883,9 +931,8 @@ void MainWindow::realtimeDataPlotSlot()
     //////////////////////////////////////////////////
     /// \brief timeStart
     ///
-    QTime timeStart = QTime::currentTime();
     // calculate two new data points:
-    double key = timeStart.msecsSinceStartOfDay()/1000.0; // time elapsed since start of demo, in seconds
+    double key = horaAtual.msecsSinceStartOfDay()/1000.0; // time elapsed since start of demo, in seconds
     //////////////////////////////////////////////////
     /// inicio a plotagem
     ///
@@ -905,6 +952,10 @@ void MainWindow::realtimeDataPlotSlot()
     ui->customPlot4->graph(1)->addData(key, newValue4a);
     lastPoints4.append(newValue4);
     lastPoints4a.append(newValue4a);
+    ui->customPlot5->graph(0)->addData(key, newValue5);
+    ui->customPlot5->graph(1)->addData(key, newValue5a);
+    lastPoints5.append(newValue5);
+    lastPoints5a.append(newValue5a);
 
     //////////////////////////////////////////////////
     if (lastPoints1.size() > pointsOnGraphic) {
@@ -916,6 +967,8 @@ void MainWindow::realtimeDataPlotSlot()
         lastPoints3a.pop_front(); // Remova o ponto mais antigo
         lastPoints4.pop_front(); // Remova o ponto mais antigo
         lastPoints4a.pop_front(); // Remova o ponto mais antigo
+        lastPoints5.pop_front(); // Remova o ponto mais antigo
+        lastPoints5a.pop_front(); // Remova o ponto mais antigo
     }
     if (reg == -1){
         lastPoints1.clear();
@@ -926,6 +979,8 @@ void MainWindow::realtimeDataPlotSlot()
         lastPoints3a.clear();
         lastPoints4.clear();
         lastPoints4a.clear();
+        lastPoints5.clear();
+        lastPoints5a.clear();
 
         ui->customPlot1->graph(0)->data()->clear();
         ui->customPlot1->graph(1)->data()->clear();
@@ -935,6 +990,8 @@ void MainWindow::realtimeDataPlotSlot()
         ui->customPlot3->graph(1)->data()->clear();
         ui->customPlot4->graph(0)->data()->clear();
         ui->customPlot4->graph(1)->data()->clear();
+        ui->customPlot5->graph(0)->data()->clear();
+        ui->customPlot5->graph(1)->data()->clear();
 
         reg = 0;
     }
@@ -970,92 +1027,211 @@ void MainWindow::realtimeDataPlotSlot()
     ui->customPlot4->yAxis->setRange(yDwlimit, yUplimit);
     ui->customPlot4->yAxis2->setRange(yDwlimita, yUplimita);
     ui->customPlot4->xAxis->setRange(key, pointsOnGraphic, Qt::AlignRight);
+    /////////////
+    yUplimit = *std::max_element(lastPoints5.begin(), lastPoints5.end());
+    yDwlimit = *std::min_element(lastPoints5.begin(), lastPoints5.end());
+    yUplimita = *std::max_element(lastPoints5a.begin(), lastPoints5a.end());
+    yDwlimita = *std::min_element(lastPoints5a.begin(), lastPoints5a.end());
+    if (yUplimita > yUplimit) yUplimit = yUplimita;
+    if (yDwlimita < yDwlimit) yDwlimit = yDwlimita;
+    ui->customPlot5->yAxis->setRange(yDwlimit, yUplimit);
+    ui->customPlot5->yAxis2->setRange(yDwlimit, yUplimit);
+    ui->customPlot5->xAxis->setRange(key, pointsOnGraphic, Qt::AlignRight);
     //////////////////////////////////////////////////
     ui->customPlot1->replot();
     ui->customPlot2->replot();
     ui->customPlot3->replot();
     ui->customPlot4->replot();
+    ui->customPlot5->replot();
 
     return emit plotDone();
 }
-void MainWindow::on_actionClean_Graphics_triggered()
-{
-    reg = -1;
-}
-void MainWindow::on_actionSave_dataGraphics_triggered(){
+void MainWindow::on_actionSave_data_triggered(){
 
-    QString basePath = "C:\\Users\\Aldair\\OneDrive\\Mercado Financeiro\\SoftwareProjetos\\TraderHelperSoftware";
-    QString currentDateTime = QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss");
-    QString filename = basePath + "\\pasdata_" + currentDateTime + ".csv";
+    if (simulationMode == false){
+        QTime horaAtual = QTime::currentTime();
+        QTime horaDesejadaStart(9, 0, 0);  // 9:00:00
+        if (horaAtual < horaDesejadaStart) return ui->statusbar->showMessage("hora atual < 9:00", 5000);
+        QTime horaDesejadaStop(18, 0, 0);  // 18:00:00
+        if (horaAtual > horaDesejadaStop) return ui->statusbar->showMessage("hora atual > 18:00", 5000);
+    }
+
+    static int cotLen = 0;
+    static int ttallLen[4] = {0, 0, 0, 0};
+    static int bfallLen = 0;
+    int i;
+
+    QString basePath = "D:\\data_Save\\data_";
+    QString currentDateTime = QDateTime::currentDateTime().toString("yyyy-MM-dd");
+
+    QString filename = basePath + currentDateTime + "_COT" + ".csv";
+    QString filenameTTdol = basePath + currentDateTime + "_TTdol" + ".csv";
+    QString filenameTTwdo = basePath + currentDateTime + "_TTwdo" + ".csv";
+    QString filenameTTind = basePath + currentDateTime + "_TTind" + ".csv";
+    QString filenameTTwin = basePath + currentDateTime + "_TTwin" + ".csv";
+    QString filenameBF = basePath + currentDateTime + "_BFall" + ".csv";
 
     // Abra o arquivo CSV para gravação
     QFile file(filename);
-    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+    QFile fileTTdol(filenameTTdol);
+    QFile fileTTwdo(filenameTTwdo);
+    QFile fileTTind(filenameTTind);
+    QFile fileTTwin(filenameTTwin);
+    QFile fileBF(filenameBF);
+
+    int tamanho = dadosDoBook[0].size(); // Supondo que todos os QVector têm o mesmo tamanho
+    int lenPs = dataAtivo[0].cotA.size(); // Número de elementos em cotA (ou perA)
+    if (tamanho != lenPs) return ui->statusbar->showMessage("tamanho diferente dos arquivos ps", 5000);
+    ///////////////////////////////////////////////////////////////////////////////
+    /// Salva COT
+    ///
+    if (file.open(QIODevice::ReadWrite | QIODevice::Text)) {
         QTextStream out(&file);
+        out.seek(file.size()); // Encontre a posição do cursor no final do arquivo
+        if(file.size() == 0)
+        {
+            //////////////////////////////////////
+            /// \brief construa cabeçalho
+            ///
+            for (int i = 0; i < 4; i++) out << dataAtivo[i].ativo << "_cotA" << ",";
+            int m = dataAtivo.size(); //numero de ativos na lista
+            for (int i = 0; i < m; i++) out << dataAtivo[i].ativo << "_perA" << ",";
 
-        // Itere sobre seus dados e escreva cada linha no arquivo CSV
-        // construa cabeçalho
-        int n = dataAtivo.size(); //dataAtivo
-        for (int i = 0; i < n; i++) {
-            out << dataAtivo[i].ativo;
-            out << "," << ",";
+            out << "\n"; // fim do cabeçalho
         }
-        n = dataDif.size(); //dataDif
-        for (int i = 0; i < n; i++) {
-            out << dataDif[i].ativos;
-            out << "," << "," << "," << "," << "," << ",";
-        }
-        out << "dataDolarFluxo";
-        out << "," << "," << "," << "," << "," << ",";
-        out << "\n";
-        // primeira linha do cabeçalho
-        n = dataAtivo.size(); //dataAtivo
-        for (int i = 0; i < n; i++) {
-            out << "cotA" << "," << "perA" << ",";
-        }
-        n = dataDif.size(); //dataAtivo
-        for (int i = 0; i < n; i++) {
-            out << "dif1m" << "," << "dif2m" << "," << "dif5m" << "," << "dif15m" << "," << "dif30m" << "," << "difD" << ",";
-        }
-        out << "deslDOL" << "," << "deslWDO" << "," << "deslDOL_varR1m" << "," << "deslWDO_varR1m" << "," << "deslDOL_varR5m" << "," << "deslWDO_varR5m" << ",";
-        out << "\n";
-        // fim do cabeçalho
+        //////////////////////////////////////
+        /// \brief escreva cada linha i até n
+        ///
+        for (i = cotLen; i < lenPs; i++) {
+            for (int j = 0; j < 4; j++) out << dataAtivo[j].cotA[i] << ",";
 
-        n = dataAtivo[0].cotA.size(); // Número de elementos em cotA (ou perA)
-
-        for (int i = 0; i < n; i++) {
-            for (const dadosDeImporPorAtivo& ativo : dataAtivo) {
-                out << ativo.cotA[i] << "," << ativo.perA[i] << ",";
-            }
-
-            for (const dadosDeDiferenca& ativos : dataDif) {
-                out << ativos.dif1m[i] << "," << ativos.dif2m[i] << ",";
-                out << ativos.dif5m[i] << "," << ativos.dif15m[i] << ",";
-                out << ativos.dif30m[i] << "," << ativos.difD[i] << ",";
-            }
-
-            out << dataDolarFluxo.deslDOL[i] << "," << dataDolarFluxo.deslWDO[i] << ",";
-            out << dataDolarFluxo.deslDOL_varR1m[i] << "," << dataDolarFluxo.deslWDO_varR1m[i] << ",";
-            out << dataDolarFluxo.deslDOL_varR5m[i] << "," << dataDolarFluxo.deslWDO_varR5m[i];
+            for (const dadosDeImporPorAtivo& ativo : dataAtivo) out << ativo.perA[i] << ",";
 
             out << "\n";
         }
-
-        // Feche o arquivo CSV
-        file.close();
+        cotLen = i;
+        //////////////////////////////////////
+        ///
+        file.close(); // Feche o arquivo CSV
 
         if (file.error() == QFile::NoError) {
-            qDebug() << "Dados salvos com sucesso em " << filename;
+            ui->statusbar->showMessage("Dados salvos com sucesso", 5000);
         } else {
             qDebug() << "Erro ao salvar os dados no arquivo CSV: " << file.errorString();
         }
     } else {
-        qDebug() << "Erro ao abrir o arquivo CSV para gravação: " << file.errorString();
+        qDebug() << "Erro ao abrir o arquivo CSV para gravação no COT: " << file.errorString();
+    }
+    ///////////////////////////////////////////////////////////////////////////////
+    ///  salva BF
+    ///
+    if (fileBF.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&fileBF);
+        out.seek(fileBF.size()); // Encontre a posição do cursor no final do arquivo
+        if(fileBF.size() == 0){
+            for (int k = 0; k < 10; k++) { //dadosDoBook[j][0].size()
+
+                for (int j = 0; j < 4; j++) {
+                    QString nome = tdp.nomeDoAtivo(static_cast<Ativos>(j));
+                    if (j > 0) {
+                        out << ","; // Separador entre os elementos da estrutura
+                    }
+                    out << nome << "_" << k << "_lC,";
+                    out << nome << "_" << k << "_pC,";
+                    out << nome << "_" << k << "_pV,";
+                    out << nome << "_" << k << "_lV";
+                }
+            }
+            out << "\n";
+        }
+
+        // Iterar sobre os elementos i
+        for (i = bfallLen; i < lenPs; i++) {
+            // Iterar sobre os elementos j (os 4 QVector)
+            for (int j = 0; j < 4; j++) {
+                // Iterar sobre os elementos do QVector atual
+                for (int k = 0; k < dadosDoBook[j][i].size(); k++) {
+                    if (k > 0) {
+                        out << ","; // Separador entre os elementos da estrutura
+                    }
+                    out << dadosDoBook[j][i][k].loteComprador << ","
+                        << dadosDoBook[j][i][k].precoComprador << ","
+                        << dadosDoBook[j][i][k].precoVendedor << ","
+                        << dadosDoBook[j][i][k].loteVendedor;
+                }
+                if (j < 3) {
+                    out << ","; // Separador entre os elementos j
+                }
+            }
+            out << "\n"; // Nova linha para a próxima iteração de i
+        }
+        bfallLen = i;
+
+        fileBF.close();
+    } else {
+        qDebug() << "Erro ao abrir o arquivo para escrita no BF";
+    }
+    ///////////////////////////////////////////////////////////////////////////////
+    ///  salva TT
+    ///
+    if (fileTTdol.open(QIODevice::ReadWrite | QIODevice::Text) &&
+        fileTTwdo.open(QIODevice::ReadWrite | QIODevice::Text) &&
+        fileTTind.open(QIODevice::ReadWrite | QIODevice::Text) &&
+        fileTTwin.open(QIODevice::ReadWrite | QIODevice::Text)) {
+
+        QTextStream outTT[4];
+        outTT[0].setDevice(&fileTTdol);
+        outTT[1].setDevice(&fileTTwdo);
+        outTT[2].setDevice(&fileTTind);
+        outTT[3].setDevice(&fileTTwin);
+
+        outTT[0].seek(fileTTdol.size()); // Encontre a posição do cursor no final do arquivo
+        outTT[1].seek(fileTTwdo.size()); // Encontre a posição do cursor no final do arquivo
+        outTT[2].seek(fileTTind.size()); // Encontre a posição do cursor no final do arquivo
+        outTT[3].seek(fileTTwin.size()); // Encontre a posição do cursor no final do arquivo
+
+        // Itere sobre seus dados e escreva cada linha no arquivo CSV
+        // construa cabeçalho
+        if(fileTTdol.size() == 0)
+            outTT[0] << "DOL_ng,DOL_time,DOL_preco,DOL_lote,DOL_AgC,DOL_AgV,DOL_Agr\n";
+        if(fileTTwdo.size() == 0)
+            outTT[1] << "WDO_ng,WDO_time,WDO_preco,WDO_lote,WDO_AgC,WDO_AgV,WDO_Agr\n";
+        if(fileTTind.size() == 0)
+            outTT[2] << "IND_ng,IND_time,IND_preco,IND_lote,IND_AgC,IND_AgV,IND_Agr\n";
+        if(fileTTwin.size() == 0)
+            outTT[3] << "WIN_ng,WIN_time,WIN_preco,WIN_lote,WIN_AgC,WIN_AgV,WIN_Agr\n";
+
+        for (int ati = 0; ati < 4; ati++)
+        {
+            if (!tdp.dadosTT[ati].empty()){
+                int n = tdp.dadosTT[ati].size();
+                for (i = ttallLen[ati]; i < n; i++)
+                {
+                    outTT[ati] << tdp.dadosTT[ati][i].negocio << ",";
+                    outTT[ati] << tdp.dadosTT[ati][i].datetime << ",";
+                    outTT[ati] << tdp.dadosTT[ati][i].preco << ",";
+                    outTT[ati] << tdp.dadosTT[ati][i].lote << ",";
+                    outTT[ati] << tdp.dadosTT[ati][i].Ag_comprador << ",";
+                    outTT[ati] << tdp.dadosTT[ati][i].Ag_vendedor << ",";
+                    outTT[ati] << tdp.dadosTT[ati][i].Agressor.left(2) << "\n";
+                }
+                ttallLen[ati] = i;
+            }
+        }
+
+        // Feche o arquivo CSV
+        fileTTdol.close();
+        fileTTwdo.close();
+        fileTTind.close();
+        fileTTwin.close();
+
+    } else {
+        qDebug() << "Erro ao abrir o arquivo CSV para gravação nos TT: " << fileTTdol.errorString();
     }
 
 
 }
-void MainWindow::saveCot(){
+void MainWindow::saveForSec(){
 
     dataDolarFluxo.deslDOL.append(diferenca);
     dataDolarFluxo.deslWDO.append(diferencaW);
@@ -1069,72 +1245,63 @@ void MainWindow::saveCot(){
         dataAtivo[i].perA.append(tdp.dadosCOT[i].variacao_p);
     }
 
+    dadosDoBook[DOL].append(tdp.dadosBF[DOL]);
+    dadosDoBook[WDO].append(tdp.dadosBF[WDO]);
+    dadosDoBook[IND].append(tdp.dadosBF[IND]);
+    dadosDoBook[WIN].append(tdp.dadosBF[WIN]);
 }
 void MainWindow::calcule_variacao(){
 
     static float DOLmedia1m = 0;
     static float WDOmedia1m = 0;
-    static float DOLmedia5m = 0;
-    static float WDOmedia5m = 0;
+    static float DOLmedia10m = 0;
+    static float WDOmedia10m = 0;
 
     dataDolarFluxo.deslDOL_varR1m.append(dataDolarFluxo.deslDOL.last() - DOLmedia1m);
     DOLmedia1m = ((amosPorMin*1 - 1) * DOLmedia1m + dataDolarFluxo.deslDOL.last())/(amosPorMin*1);
     dataDolarFluxo.deslWDO_varR1m.append(dataDolarFluxo.deslWDO.last() - WDOmedia1m);
     WDOmedia1m = ((amosPorMin*1 - 1) * WDOmedia1m + dataDolarFluxo.deslWDO.last())/(amosPorMin*1);
-    dataDolarFluxo.deslDOL_varR5m.append(dataDolarFluxo.deslDOL.last() - DOLmedia5m);
-    DOLmedia5m = ((amosPorMin*1 - 1) * DOLmedia5m + dataDolarFluxo.deslDOL.last())/(amosPorMin*1);
-    dataDolarFluxo.deslWDO_varR5m.append(dataDolarFluxo.deslWDO.last() - WDOmedia5m);
-    WDOmedia5m = ((amosPorMin*1 - 1) * WDOmedia5m + dataDolarFluxo.deslDOL.last())/(amosPorMin*1);
+    dataDolarFluxo.deslDOL_varR10m.append(dataDolarFluxo.deslDOL.last() - DOLmedia10m);
+    DOLmedia10m = ((amosPorMin*10 - 1) * DOLmedia10m + dataDolarFluxo.deslDOL.last())/(amosPorMin*10);
+    dataDolarFluxo.deslWDO_varR10m.append(dataDolarFluxo.deslWDO.last() - WDOmedia10m);
+    WDOmedia10m = ((amosPorMin*10 - 1) * WDOmedia10m + dataDolarFluxo.deslDOL.last())/(amosPorMin*10);
 }
 void MainWindow::calcule_diferenca(){
 
-    static float media1m[tdp.tamAtivo];
-    static float media2m[tdp.tamAtivo];
-    static float media5m[tdp.tamAtivo];
-    static float media15m[tdp.tamAtivo];
-    static float media30m[tdp.tamAtivo];
+    static float media1m[7];
+    static float media10m[7];
 
-    int atRef = DOL;
+    int atRef = WDO;
+    int j = 0;
+    for(int i = 0; i < tdp.tamAtivo; i++){
 
-    for(int j = 0; j < tdp.tamAtivo; j++){
-        if (dataDif[j].dif1m.isEmpty()){
-            Ativos ativo1 = static_cast<Ativos>(DOL);
-            Ativos ativo2 = static_cast<Ativos>(j);
-            dataDif[j].ativos = tdp.nomeDoAtivo(ativo1) + "_" + tdp.nomeDoAtivo(ativo2);
-        }
+        Ativos checkIs = static_cast<Ativos>(i);
+        if (listaDeAtivosDiff.contains(checkIs)){
 
-        float lastDif = dataAtivo[atRef].perA.last() - dataAtivo[j].perA.last();
-        dataDif[j].difD.append(lastDif);
+            if (dataDif[j].dif1m.isEmpty()){
+                Ativos ativo1 = static_cast<Ativos>(WDO);
+                Ativos ativo2 = static_cast<Ativos>(i);
+                dataDif[j].ativos = tdp.nomeDoAtivo(ativo1) + "_" + tdp.nomeDoAtivo(ativo2);
+            }
 
-        if(dataDif[j].dif1m.isEmpty()){
-            dataDif[j].dif1m.append(lastDif);
-            media1m[j] = lastDif;
-            dataDif[j].dif2m.append(lastDif);
-            media2m[j] = lastDif;
-            dataDif[j].dif5m.append(lastDif);
-            media5m[j] = lastDif;
-            dataDif[j].dif15m.append(lastDif);
-            media15m[j] = lastDif;
-            dataDif[j].dif30m.append(lastDif);
-            media30m[j] = lastDif;
-        }else{
-            dataDif[j].dif1m.append(lastDif - media1m[j]);
-            media1m[j] = ((amosPorMin*1 - 1) * media1m[j] + lastDif)/(amosPorMin*1);
-            dataDif[j].dif2m.append(lastDif - media2m[j]);
-            media2m[j] = ((amosPorMin*2 - 1) * media2m[j] + lastDif)/(amosPorMin*2);
-            dataDif[j].dif5m.append(lastDif - media5m[j]);
-            media5m[j] = ((amosPorMin*1 - 1) * media5m[j] + lastDif)/(amosPorMin*5);
-            dataDif[j].dif15m.append(lastDif - media15m[j]);
-            media15m[j] = ((amosPorMin*15 - 1) * media15m[j] + lastDif)/(amosPorMin*15);
-            dataDif[j].dif30m.append(lastDif - media30m[j]);
-            media30m[j] = ((amosPorMin*30 - 1) * media30m[j] + lastDif)/(amosPorMin*30);
+
+            float lastDif = dataAtivo[atRef].perA.last() -(corPusVol[i]*dataAtivo[i].perA.last());
+
+            if(dataDif[j].dif1m.isEmpty()){
+                dataDif[j].dif1m.append(lastDif);
+                media1m[j] = lastDif;
+                dataDif[j].dif10m.append(lastDif);
+                media10m[j] = lastDif;
+            }else{
+                dataDif[j].dif1m.append(lastDif - media1m[j]);
+                media1m[j] = ((amosPorMin*1 - 1) * media1m[j] + lastDif)/(amosPorMin*1);
+                dataDif[j].dif10m.append(lastDif - media10m[j]);
+                media10m[j] = ((amosPorMin*10 - 1) * media10m[j] + lastDif)/(amosPorMin*10);
+            }
+            j++;
         }
     }
 }
-
-
-
-
 
 
 

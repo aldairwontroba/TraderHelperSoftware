@@ -19,9 +19,7 @@ enum Ativos {
     DI1F25,
     DI1F26,
     DI1F27,
-    DI1F28,
     DI1F29,
-    DI1F30,
     DI1F31,
     DI1F33,
     DXY,
@@ -102,9 +100,7 @@ public:
         if (str == "DI1F25") return DI1F25;
         if (str == "DI1F26") return DI1F26;
         if (str == "DI1F27") return DI1F27;
-        if (str == "DI1F28") return DI1F28;
         if (str == "DI1F29") return DI1F29;
-        if (str == "DI1F30") return DI1F30;
         if (str == "DI1F31") return DI1F31;
         if (str == "DI1F33") return DI1F33;
 
@@ -161,12 +157,8 @@ public:
             return "DI1F26";
         case DI1F27:
             return "DI1F27";
-        case DI1F28:
-            return "DI1F28";
         case DI1F29:
             return "DI1F29";
-        case DI1F30:
-            return "DI1F30";
         case DI1F31:
             return "DI1F31";
         case DI1F33:
@@ -223,7 +215,8 @@ public:
     static const int numAtivoTT = 4;
     static const int numAtivoBF = 4;
     static const int filtroTToF = 50;
-    static const int tamAtivo = 34;
+    static const int tamAtivo = 32;
+    QVector<Ativos> listaDeAtivosTTo;
 
     struct dataTT {
         int negocio;
@@ -293,6 +286,7 @@ public:
     QVector<dataTT> dadosTT[numAtivoTT];
     QVector<dataTTo> dadosTTo[numAtivoTT];
     QVector<dataTTo> dadosTToF[numAtivoTT];
+
     QVector<dataBOOKF> dadosBF[numAtivoBF];
 
     dataCOT dadosCOT[tamAtivo];
